@@ -1,0 +1,1 @@
+﻿public record CreateCompanyCommand(string Name, string? Address, string? TaxNumber);

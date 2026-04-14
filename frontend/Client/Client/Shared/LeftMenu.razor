@@ -1,0 +1,29 @@
+﻿@using MudBlazor
+
+<MudDrawer Open="true" Elevation="1" Variant="@DrawerVariant.Responsive">
+    <MudDrawerHeader>
+        <MudText Typo="Typo.h6" Align="Align.Center">Navigation</MudText>
+    </MudDrawerHeader>
+    <MudNavMenu>
+        <AuthorizeView>
+            <Authorized>
+                <MudNavLink Href="/profile" Icon="@Icons.Material.Filled.Person">Profile</MudNavLink>
+            </Authorized>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="Admin,SuperAdmin">
+            <Authorized>
+                <MudNavLink Href="/companies" Icon="@Icons.Material.Filled.Business">Companies</MudNavLink>
+                <MudNavLink Href="/contracts" Icon="@Icons.Material.Filled.Assignment">Contracts</MudNavLink>
+                <MudNavLink Href="/employees" Icon="@Icons.Material.Filled.People">Employees</MudNavLink>
+            </Authorized>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="User">
+            <Authorized>
+                <MudNavLink Href="/my-contracts" Icon="@Icons.Material.Filled.Assignment">My Contracts</MudNavLink>
+            </Authorized>
+        </AuthorizeView>
+
+    </MudNavMenu>
+</MudDrawer>

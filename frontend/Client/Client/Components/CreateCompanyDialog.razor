@@ -1,0 +1,52 @@
+﻿@using Client.Models.Commands
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form" @bind-IsValid="@_success">
+            <MudTextField @bind-Value="_model.Name" 
+                          Label="Company name" 
+                          Required="true" 
+                          RequiredError="Name is required" 
+                          Variant="Variant.Outlined" Class="mb-3"/>
+                          
+            <MudTextField @bind-Value="_model.Address" 
+                          Label="Address" 
+                          Variant="Variant.Outlined" Class="mb-3"/>
+                          
+            <MudTextField @bind-Value="_model.TaxNumber" 
+                          Label="INN number" 
+                          Variant="Variant.Outlined" Class="mb-3"/>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="@(!_success)">Create</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    
+    private MudForm _form = null!;
+    private bool _success;
+    private CompanyFormModel _model = new();
+
+    private class CompanyFormModel
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Address { get; set; }
+        public string? TaxNumber { get; set; }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Submit()
+    {
+        await _form.Validate();
+        if (_form.IsValid)
+        {
+            var command = new CreateCompanyCommand(_model.Name, _model.Address, _model.TaxNumber);
+            MudDialog.Close(DialogResult.Ok(command));
+        }
+    }
+}

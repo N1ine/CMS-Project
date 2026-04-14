@@ -1,0 +1,111 @@
+﻿@page "/companies"
+@using Client.Models
+@using Client.Models.Commands
+@using Client.Services
+@using Client.Components
+@inject CompanyService CompanyService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<div class="d-flex justify-space-between align-center mb-4">
+    <MudText Typo="Typo.h4">Companies</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreateDialog">
+        Add Company
+    </MudButton>
+</div>
+
+<MudTable Items="@_companies" Loading="@_isLoading" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="4">
+    <HeaderContent>
+        <MudTh>ID</MudTh>
+        <MudTh>Name</MudTh>
+        <MudTh>Address</MudTh>
+        <MudTh>INN</MudTh>
+        <MudTh Style="width: 100px; text-align: right;">Действия</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="ID">@context.Id</MudTd>
+        <MudTd DataLabel="Name"><strong>@context.Name</strong></MudTd>
+        <MudTd DataLabel="Address">@context.Address</MudTd>
+        <MudTd DataLabel="INN">@context.TaxNumber</MudTd>
+        <MudTd DataLabel="Actions" Style="text-align: right;">
+            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteCompany(context.Id))" />
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText>Companies not found! Add new Company</MudText>
+    </NoRecordsContent>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
+
+@code {
+    private List<CompanyDto> _companies = new();
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _isLoading = true;
+        try
+        {
+            _companies = await CompanyService.GetAllCompaniesAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Ошибка загрузки: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<CreateCompanyDialog>("Новая компания", options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled && result.Data is CreateCompanyCommand command)
+        {
+            try
+            {
+                await CompanyService.CreateCompanyAsync(command);
+                Snackbar.Add("Компания успешно добавлена", Severity.Success);
+                await LoadData(); // Обновляем таблицу
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Ошибка при сохранении: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteCompany(int id)
+    {
+        // Встроенный диалог MudBlazor для подтверждения действий
+        bool? confirm = await DialogService.ShowMessageBox(
+            "Удаление", 
+            "Вы уверены, что хотите удалить эту компанию?", 
+            yesText: "Удалить", cancelText: "Отмена");
+
+        if (confirm == true)
+        {
+            try
+            {
+                await CompanyService.DeleteCompanyAsync(id);
+                Snackbar.Add("Компания удалена", Severity.Success);
+                await LoadData();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Не удалось удалить: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+}

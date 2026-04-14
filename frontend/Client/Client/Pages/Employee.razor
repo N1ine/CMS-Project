@@ -1,0 +1,184 @@
+@page "/employees"
+@using MudBlazor
+@using Client.Services
+@using Client.Models.Commands
+@using Client.Models
+@using Client.Components
+@inject EmployeeService employeeService
+@inject CompanyService companyService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<div class="d-flex justify-space-between align-center mb-4">
+    <MudText Typo="Typo.h5">Employee</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OpenCreateDialog">
+        Add employee
+    </MudButton>
+</div>
+
+<MudTable Items="@employees" Hover="true" Loading="@isLoading" Elevation="2">
+    <HeaderContent>
+        <MudTh>Name</MudTh>
+        <MudTh>Surname</MudTh>
+        <MudTh>Email</MudTh>
+        <MudTh>Company</MudTh>
+        <MudTh Style="width: 150px; text-align: center;">Actions</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Name">@context.FirstName</MudTd>
+        <MudTd DataLabel="Surname">@context.LastName</MudTd>
+        <MudTd DataLabel="Email">@(string.IsNullOrEmpty(context.Email) ? "—" : context.Email)</MudTd>
+        <MudTd DataLabel="Company">@(allCompanies.FirstOrDefault(c => c.Id == context.CompanyId)?.Name ?? "Без компании")</MudTd>
+        <MudTd DataLabel="Actions">
+            <div class="d-flex justify-center">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Warning" Size="Size.Small" OnClick="@(() => OpenEditDialog(context))" title="Edit" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteEmployee(context.Id))" title="Delete" />
+            </div>
+        </MudTd>
+    </RowTemplate>
+</MudTable>
+
+@code {
+    private List<EmployeeDto> employees = new();
+    private List<CompanyDto> allCompanies = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            // Здесь используем ТОЛЬКО employeeService
+            var empTask = employeeService.GetAllAsync();
+            var compTask = companyService.GetAllCompaniesAsync();
+
+            await Task.WhenAll(empTask, compTask);
+
+            employees = empTask.Result;
+            allCompanies = compTask.Result; 
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Ошибка загрузки сотрудников.", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DeleteEmployee(int id)
+    {
+        try
+        {
+            await employeeService.DeleteAsync(id);
+            Snackbar.Add("Сотрудник удален", Severity.Success);
+            await LoadData();
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Ошибка удаления.", Severity.Error);
+        }
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        // Подгружаем компании, если их нет
+        if (allCompanies == null || !allCompanies.Any())
+        {
+            isLoading = true; 
+            allCompanies = await companyService.GetAllCompaniesAsync();
+            isLoading = false;
+        }
+
+        if (allCompanies == null || !allCompanies.Any())
+        {
+            Snackbar.Add("Компании не найдены. Создайте их", Severity.Warning);
+            return;
+        }
+
+        var command = new UpdateEmployeeCommand();
+        var parameters = new DialogParameters { { "Model", command }, { "Companies", allCompanies } };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        
+        Console.WriteLine("--- НАЧАЛО СОЗДАНИЯ ---");
+        var dialog = await DialogService.ShowAsync<EmployeeDialog>("Новый сотрудник", parameters, options);
+        var result = await dialog.Result;
+
+        Console.WriteLine($"ШАГ 1: Диалог закрыт. Отменен: {result?.Canceled}");
+
+        if (result != null && !result.Canceled)
+        {
+            Console.WriteLine($"ШАГ 2: Тип полученных данных: {result.Data?.GetType().Name}");
+            
+            if (result.Data is UpdateEmployeeCommand newCommand)
+            {
+                Console.WriteLine("ШАГ 3: Типы совпали. Формируем CreateCommand...");
+                try
+                {
+                    var createCommand = new CreateEmployeeCommand
+                    {
+                        CompanyId = newCommand.CompanyId,
+                        FirstName = newCommand.FirstName,
+                        LastName = newCommand.LastName,
+                        Email = newCommand.Email
+                    };
+                    
+                    Console.WriteLine("ШАГ 4: Отправляем запрос на бекенд...");
+                    await employeeService.CreateAsync(createCommand);
+                    
+                    Console.WriteLine("ШАГ 5: УСПЕХ! Сервер принял данные.");
+                    Snackbar.Add("Сотрудник добавлен", Severity.Success);
+                    await LoadData(); // Обновляем таблицу
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"ШАГ 5 (ОШИБКА): Сервер вернул ошибку - {ex.Message}");
+                    Snackbar.Add($"Ошибка: {ex.Message}", Severity.Error);
+                }
+            }
+            else
+            {
+                Console.WriteLine("КРИТИЧЕСКАЯ ОШИБКА: Тип данных не распознан как UpdateEmployeeCommand!");
+            }
+        }
+    }
+
+    private async Task OpenEditDialog(EmployeeDto employee)
+    {
+        var command = new UpdateEmployeeCommand
+        {
+            Id = employee.Id,
+            CompanyId = employee.CompanyId,
+            FirstName = employee.FirstName,
+            LastName = employee.LastName,
+            Email = employee.Email
+        };
+
+        var parameters = new DialogParameters { { "Model", command }, { "Companies", allCompanies } };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        
+        var dialog = await DialogService.ShowAsync<EmployeeDialog>("Редактировать", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled && result.Data is UpdateEmployeeCommand updatedCommand)
+        {
+            try
+            {
+                await employeeService.UpdateAsync(employee.Id, updatedCommand);
+                Snackbar.Add("Данные обновлены", Severity.Success);
+                await LoadData();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Ошибка: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+}

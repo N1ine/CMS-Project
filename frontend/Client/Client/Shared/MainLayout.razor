@@ -1,0 +1,19 @@
+﻿@inherits LayoutComponentBase
+@using MudBlazor
+@using Client.Shared
+
+<MudThemeProvider IsDarkMode="true" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<MudPopoverProvider /> @* ДОБАВИТЬ ЭТУ СТРОКУ *@
+
+<MudLayout>
+    <TopBar />
+    <LeftMenu />
+
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pt-4">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>

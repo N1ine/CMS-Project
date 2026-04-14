@@ -1,0 +1,64 @@
+﻿@namespace Client.Components
+@using MudBlazor
+@using Client.Models
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form" @bind-IsValid="@_success">
+            <MudTextField @bind-Value="_model.Name" Label="Company Name" Required="true" Variant="Variant.Outlined" Class="mb-3" />
+            <MudTextField @bind-Value="_model.Address" Label="Company Address" Variant="Variant.Outlined" Class="mb-3" />
+            <MudTextField @bind-Value="_model.TaxNumber" Label="Tax Number" Variant="Variant.Outlined" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="@(!_success)" OnClick="Submit">Save Changes</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    
+    // Сюда мы передаем данные компании при открытии диалога
+    [Parameter] public CompanyDto Company { get; set; } = null!;
+
+    private MudForm _form = null!;
+    private bool _success;
+    private CompanyFormModel _model = new();
+
+    protected override void OnInitialized()
+    {
+        // Предзаполняем форму данными
+        if (Company != null)
+        {
+            _model.Name = Company.Name;
+            _model.Address = Company.Address;
+            _model.TaxNumber = Company.TaxNumber;
+        }
+    }
+
+    private class CompanyFormModel
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Address { get; set; }
+        public string? TaxNumber { get; set; }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Submit()
+    {
+        await _form.Validate();
+        if (_form.IsValid)
+        {
+            // Убрали Client.Models.Commands, так как добавили using вверху
+            var command = new UpdateCompanyCommand(
+                Company.Id, 
+                _model.Name, 
+                _model.Address, 
+                _model.TaxNumber);
+                
+            MudDialog.Close(DialogResult.Ok(command));
+        }
+    }
+}

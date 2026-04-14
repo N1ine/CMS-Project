@@ -1,0 +1,232 @@
+﻿@page "/contracts"
+@using MudBlazor
+@using Client.Services
+@using Client.Models.Commands
+@using Client.Models.DTOs
+@using Client.Components 
+@implements IDisposable
+@inject SearchService searchService
+@inject ContractsService contractsService
+@inject CompanyService companyService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject EmployeeService employeeService
+
+<div class="d-flex justify-space-between align-center mb-4">
+    <MudText Typo="Typo.h5">Contracts</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OpenCreateDialog">
+        Create Contract
+    </MudButton>
+</div>
+
+<MudTable Items="@contracts" Hover="true" Loading="@isLoading" Elevation="2">
+    <HeaderContent>
+        <MudTh>Contract Name (Position)</MudTh>
+        <MudTh>Start Date</MudTh>
+        <MudTh>End Date</MudTh>
+        <MudTh>Company</MudTh>
+        <MudTh>Employee</MudTh>
+        <MudTh>Status</MudTh>
+        <MudTh Style="width: 150px; text-align: center;">Actions</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Position">@context.Position</MudTd>
+        <MudTd DataLabel="Start Date">@context.StartDate.ToString("dd.MM.yyyy")</MudTd>
+        <MudTd DataLabel="End Date">@(context.EndDate?.ToString("dd.MM.yyyy") ?? "—")</MudTd>
+        <MudTd DataLabel="Company">@context.CompanyName</MudTd>
+        <MudTd DataLabel="Employee">@context.EmployeeFirstName @context.EmployeeLastName</MudTd>
+        <MudTd DataLabel="Status">
+            @{ var statusStr = context.Status.ToString(); }
+            @switch (statusStr)
+            {
+                case "NotStarted":
+                case "0":
+                    <MudChip T="string" Color="Color.Warning" Size="Size.Small">Not Started</MudChip>
+                    break;
+                case "Active":
+                case "1":
+                    <MudChip T="string" Color="Color.Success" Size="Size.Small">Active</MudChip>
+                    break;
+                case "Finished":
+                case "2":
+                    <MudChip T="string" Color="Color.Default" Size="Size.Small">Finished</MudChip>
+                    break;
+                default:
+                    <MudChip T="string" Color="Color.Default" Size="Size.Small">@statusStr</MudChip>
+                    break;
+            }
+        </MudTd>
+        <MudTd DataLabel="Actions">
+            <div class="d-flex justify-center">
+                <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Size="Size.Small" OnClick="@(() => OpenEditDialog(context, true))" title="View" />
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Warning" Size="Size.Small" OnClick="@(() => OpenEditDialog(context, false))" title="Edit" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteContract(context.Id))" title="Delete" />
+            </div>
+        </MudTd>
+    </RowTemplate>
+</MudTable>
+
+@code {
+    private List<ContractDto> contracts = new();
+    private List<CompanyDto> allCompanies = new();
+    private List<EmployeeDto> allEmployees = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        searchService.OnSearchTriggered += HandleSearch;
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            // Загружаем данные по очереди. Это намного безопаснее для Blazor.
+            var loadedContracts = await contractsService.GetAllAsync();
+            contracts = loadedContracts != null ? loadedContracts.ToList() : new List<ContractDto>();
+
+            var loadedCompanies = await companyService.GetAllCompaniesAsync();
+            allCompanies = loadedCompanies != null ? loadedCompanies.ToList() : new List<CompanyDto>();
+
+            var loadedEmployees = await employeeService.GetAllAsync();
+            allEmployees = loadedEmployees != null ? loadedEmployees.ToList() : new List<EmployeeDto>();
+            
+            Console.WriteLine($"Успех! Компаний: {allCompanies.Count}, Сотрудников: {allEmployees.Count}");
+        }
+        catch (Exception ex)
+        {
+            // Теперь ошибка выведет точную причину прямо в красную плашку!
+            Console.WriteLine($"КРИТИЧЕСКАЯ ОШИБКА ЗАГРУЗКИ: {ex}");
+            Snackbar.Add($"Ошибка: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async void HandleSearch()
+    {
+        // Временно отключаем GetFilteredAsync, пока не напишем бэкенд для него.
+        // Просто перезагружаем данные.
+        await LoadData(); 
+    }
+
+    private async Task DeleteContract(int id)
+    {
+        try
+        {
+            await contractsService.DeleteAsync(id);
+            Snackbar.Add("Contract deleted successfully", Severity.Success);
+            await LoadData();
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Error deleting contract.", Severity.Error);
+        }
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        // 1. Проверяем, есть ли данные
+        if (!allCompanies.Any() || !allEmployees.Any()) 
+            await LoadData();
+
+        var command = new UpdateContractCommand { StartDate = DateTime.Today };
+
+        var parameters = new DialogParameters
+        {
+            { "Model", command },
+            { "IsViewOnly", false },
+            { "Companies", allCompanies },
+            { "Employees", allEmployees } 
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        
+        // 2. Открываем окно КОНТРАКТОВ
+        var dialog = await DialogService.ShowAsync<ContractDialog>("Create Contract", parameters, options);
+        var result = await dialog.Result;
+
+        // 3. Если форма подтверждена и вернула данные контракта
+        if (result != null && !result.Canceled && result.Data is UpdateContractCommand newCommand)
+        {
+            try
+            {
+                // Собираем правильную команду для создания контракта
+                var createCommand = new CreateContractCommand
+                {
+                    CompanyId = newCommand.CompanyId,
+                    EmployeeId = newCommand.EmployeeId,
+                    Position = newCommand.Position,
+                    Description = newCommand.Description,
+                    StartDate = newCommand.StartDate,
+                    EndDate = newCommand.EndDate,
+                    Wage = newCommand.Wage
+                };
+                
+                // 4. Отправляем именно КОНТРАКТ на бэкенд
+                await contractsService.CreateAsync(createCommand);
+                Snackbar.Add("Контракт успешно создан!", Severity.Success);
+                
+                // 5. Обновляем таблицу контрактов
+                await LoadData(); 
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Ошибка при создании контракта: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenEditDialog(ContractDto contract, bool isViewOnly)
+    {
+        var command = new UpdateContractCommand
+        {
+            Id = contract.Id,
+            CompanyId = contract.CompanyId,
+            EmployeeId = contract.EmployeeId,
+            Position = contract.Position,
+            Description = contract.Description,
+            StartDate = contract.StartDate,
+            EndDate = contract.EndDate,
+            Wage = contract.Wage
+        };
+
+        var parameters = new DialogParameters
+        {
+            { "Model", command },
+            { "IsViewOnly", isViewOnly },
+            { "Companies", allCompanies }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var title = isViewOnly ? "View Contract" : "Edit Contract";
+        
+        // Исправлено: убрали неймспейс из дженерика
+        var dialog = await DialogService.ShowAsync<ContractDialog>(title, parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled && !isViewOnly && result.Data is UpdateContractCommand updatedCommand)
+        {
+            try
+            {
+                await contractsService.UpdateAsync(contract.Id, updatedCommand);
+                Snackbar.Add("Contract updated successfully", Severity.Success);
+                await LoadData();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error updating contract: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        searchService.OnSearchTriggered -= HandleSearch;
+    }
+}

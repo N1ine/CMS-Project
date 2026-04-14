@@ -1,0 +1,159 @@
+﻿@namespace Client.Components
+@using MudBlazor
+@using Client.Models.DTOs
+@using Client.Models.Commands
+@using Client.Services
+@inject EmployeeService EmployeeService
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form" @bind-IsValid="@_success">
+            @* Select company *@
+            <MudSelect T="int" Label="Company" Value="@_model.CompanyId" ValueChanged="@OnCompanyChanged" Required="true" Variant="Variant.Outlined" Class="mb-3" Disabled="@IsViewOnly">
+                @if (Companies != null && Companies.Any())
+                {
+                    @foreach (var comp in Companies)
+                    {
+                        <MudSelectItem T="int" Value="@comp.Id">@comp.Name</MudSelectItem>
+                    }
+                }
+                else
+                {
+                    <MudSelectItem T="int" Value="0" Disabled="true">Companies not loaded</MudSelectItem>
+                }
+            </MudSelect>
+
+            @* Select employee (depends on company) *@
+            <MudSelect T="int" Label="Employee" @bind-Value="_model.EmployeeId" Required="true" Variant="Variant.Outlined" Class="mb-3" Disabled="@(IsViewOnly || _model.CompanyId == 0 || _isLoadingEmployees)">
+                @if (_employees.Any())
+                {
+                    @foreach (var emp in _employees)
+                    {
+                        <MudSelectItem T="int" Value="@emp.Id">@emp.FirstName @emp.LastName</MudSelectItem>
+                        }
+                }
+                else if (_model.CompanyId != 0)
+                {
+                    <MudSelectItem T="int" Value="0" Disabled="true">This company does not have employees</MudSelectItem>
+                }
+                else
+                {
+                    <MudSelectItem T="int" Value="0" Disabled="true">Select company first</MudSelectItem>
+                }
+            </MudSelect>
+
+            <MudTextField @bind-Value="_model.Position" Label="Position" Required="true" Variant="Variant.Outlined" Class="mb-3" ReadOnly="@IsViewOnly" />
+            
+            <MudTextField @bind-Value="_model.Description" Label="Job description" Lines="3" Required="true" Variant="Variant.Outlined" Class="mb-3" ReadOnly="@IsViewOnly" />
+
+            <MudGrid Class="mb-3">
+                <MudItem xs="6">
+                    <MudDatePicker @bind-Date="_model.StartDate" Label="Start date" Required="true" Variant="Variant.Outlined" ReadOnly="@IsViewOnly" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudDatePicker @bind-Date="_model.EndDate" Label="End date" Variant="Variant.Outlined" ReadOnly="@IsViewOnly" />
+                </MudItem>
+            </MudGrid>
+
+            <MudNumericField @bind-Value="_model.Wage" Label="Salary" Required="true" Variant="Variant.Outlined" Min="0" ReadOnly="@IsViewOnly" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        @if (!IsViewOnly)
+        {
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="@(!_success)" OnClick="Submit">Save</MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    
+    [Parameter] public UpdateContractCommand? Model { get; set; }
+    [Parameter] public List<CompanyDto> Companies { get; set; } = new();
+    [Parameter] public bool IsViewOnly { get; set; } = false;
+    [Parameter] public List<EmployeeDto> Employees { get; set; } = new();
+
+    private MudForm _form = null!;
+    private bool _success;
+    private bool _isLoadingEmployees;
+    private List<EmployeeDto> _employees = new();
+    
+    // Мутабельная модель для формы
+    private ContractFormModel _model = new();
+
+    private class ContractFormModel
+    {
+        public int CompanyId { get; set; }
+        public int EmployeeId { get; set; }
+        public string Position { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public DateTime? StartDate { get; set; } = DateTime.Today;
+        public DateTime? EndDate { get; set; }
+        public decimal Wage { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Model != null)
+        {
+            _model.CompanyId = Model.CompanyId;
+            _model.EmployeeId = Model.EmployeeId;
+            _model.Position = Model.Position;
+            _model.Description = Model.Description;
+            _model.StartDate = Model.StartDate != default ? Model.StartDate : DateTime.Today;
+            _model.EndDate = Model.EndDate;
+            _model.Wage = Model.Wage;
+
+            if (_model.CompanyId > 0)
+            {
+                await LoadEmployees(_model.CompanyId);
+            }
+        }
+    }
+
+    private async Task OnCompanyChanged(int companyId)
+    {
+        _model.CompanyId = companyId;
+        _model.EmployeeId = 0; // Сбрасываем выбранного сотрудника при смене компании
+        await LoadEmployees(companyId);
+    }
+
+    private async Task LoadEmployees(int companyId)
+    {
+        _isLoadingEmployees = true;
+        try
+        {
+            _employees = await EmployeeService.GetByCompanyIdAsync(companyId);
+        }
+        finally
+        {
+            _isLoadingEmployees = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Submit()
+    {
+        await _form.Validate();
+        if (_form.IsValid)
+        {
+            // Собираем данные обратно в твой Command
+            var resultCommand = new UpdateContractCommand
+            {
+                Id = Model?.Id ?? 0,
+                CompanyId = _model.CompanyId,
+                EmployeeId = _model.EmployeeId,
+                Position = _model.Position,
+                Description = _model.Description,
+                StartDate = _model.StartDate ?? DateTime.Today,
+                EndDate = _model.EndDate,
+                Wage = _model.Wage
+            };
+            
+            MudDialog.Close(DialogResult.Ok(resultCommand));
+        }
+    }
+}

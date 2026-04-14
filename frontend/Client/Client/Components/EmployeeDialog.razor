@@ -1,0 +1,97 @@
+@namespace Client.Components
+@using MudBlazor
+@using Client.Models
+@using Client.Models.Commands
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form" @bind-IsValid="@_success">
+            <MudSelect T="int" Label="Company" @bind-Value="_model.CompanyId" Required="true" Variant="Variant.Outlined" Class="mb-3">
+    @if (Companies != null && Companies.Any())
+    {
+        @foreach (var comp in Companies)
+        {
+            <MudSelectItem T="int" Value="@comp.Id">@comp.Name</MudSelectItem>
+        }
+    }
+    else
+    {
+        <MudSelectItem T="int" Value="0" Disabled="true">Companies are not loaded</MudSelectItem>
+    }
+</MudSelect>
+
+            <MudTextField @bind-Value="_model.FirstName" Label="Name" Required="true" Variant="Variant.Outlined" Class="mb-3" />
+            <MudTextField @bind-Value="_model.LastName" Label="Surname" Required="true" Variant="Variant.Outlined" Class="mb-3" />
+            <MudTextField @bind-Value="_model.Email" Label="Email" Variant="Variant.Outlined" Class="mb-3" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public List<CompanyDto> Companies { get; set; } = new();
+    [Parameter] public UpdateEmployeeCommand? Model { get; set; }
+
+    private MudForm _form = null!;
+    private bool _success;
+
+    private EmployeeFormModel _model = new();
+
+    private class EmployeeFormModel
+    {
+        public int CompanyId { get; set; }
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string? Email { get; set; }
+    }
+
+    protected override void OnInitialized()
+    {
+        if (Model != null)
+        {
+            _model.CompanyId = Model.CompanyId; // Просто присваиваем без проверок на null
+            _model.FirstName = Model.FirstName;
+            _model.LastName = Model.LastName;
+            _model.Email = Model.Email;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Submit()
+    {
+        Console.WriteLine("Кнопка Сохранить нажата!"); // Проверка 1
+        
+        await _form.Validate();
+        Console.WriteLine($"Форма валидна? {_form.IsValid}"); // Проверка 2
+
+        if (_model.CompanyId == 0)
+        {
+            Snackbar.Add("Пожалуйста, выберите компанию!", Severity.Warning);
+            return;
+        }
+
+        if (_form.IsValid)
+        {
+            Console.WriteLine("Форма успешна, закрываем окно и передаем данные в Employee.razor"); // Проверка 3
+            var resultCommand = new UpdateEmployeeCommand
+            {
+                Id = Model?.Id ?? 0,
+                CompanyId = _model.CompanyId,
+                FirstName = _model.FirstName,
+                LastName = _model.LastName,
+                Email = string.IsNullOrWhiteSpace(_model.Email) ? null : _model.Email
+            };
+            MudDialog.Close(DialogResult.Ok(resultCommand));
+        }
+        else 
+        {
+             Console.WriteLine("Блокировка! MudForm считает, что не все обязательные поля заполнены.");
+        }
+    }
+}

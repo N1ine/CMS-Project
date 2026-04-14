@@ -1,0 +1,103 @@
+﻿@page "/login"
+@using Microsoft.AspNetCore.Authorization
+@attribute [AllowAnonymous]
+@using Client.Models.Commands
+@using Client.Services
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@layout AuthLayout
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center justify-center mud-width-full" Style="height: 100vh;">
+    <MudPaper Elevation="3" Class="pa-8 w-100" Style="max-width: 450px;">
+        <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6">Вход в CMS</MudText>
+
+        <MudForm @ref="_form" @bind-IsValid="@_success">
+            <MudTextField @bind-Value="_model.UserName"
+                          Label="Логин"
+                          Required="true"
+                          RequiredError="Введите логин"
+                          Variant="Variant.Outlined"
+                          Class="mb-4" />
+
+            <MudTextField @bind-Value="_model.Password"
+                          Label="Пароль"
+                          InputType="InputType.Password"
+                          Required="true"
+                          RequiredError="Введите пароль"
+                          Variant="Variant.Outlined"
+                          Class="mb-6" />
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Size="Size.Large"
+                       FullWidth="true"
+                       Disabled="@(!_success || _isLoading)"
+                       OnClick="ExecuteLogin">
+                @if (_isLoading)
+                {
+                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                    <MudText Class="ms-2">Вход...</MudText>
+                }
+                else
+                {
+                    <MudText>Войти</MudText>
+                }
+            </MudButton>
+        </MudForm>
+
+        <div class="d-flex justify-center mt-4 align-center">
+            <MudText Typo="Typo.body2">Нет аккаунта?</MudText>
+            <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" Class="ml-1" OnClick="@(() => NavigationManager.NavigateTo("/register"))">
+                Зарегистрироваться
+            </MudButton>
+        </div>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private MudForm _form = null!;
+    private bool _success;
+    private bool _isLoading;
+    
+    // Мутабельная модель для формы Blazor
+    private LoginFormModel _model = new();
+
+    private class LoginFormModel
+    {
+        public string UserName { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+
+    private async Task ExecuteLogin()
+    {
+        await _form.Validate();
+        if (!_form.IsValid) return;
+
+        _isLoading = true;
+        try
+        {
+            // Собираем строгий record для отправки в сервис
+            var command = new Client.Models.Commands.LoginCommand(_model.UserName, _model.Password);
+            
+            var result = await AuthService.LoginAsync(command);
+            if (result)
+            {
+                Snackbar.Add("Успешный вход!", Severity.Success);
+                NavigationManager.NavigateTo("/");
+            }
+            else
+            {
+                Snackbar.Add("Неверный логин или пароль", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Ошибка сервера: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

@@ -1,0 +1,87 @@
+﻿@page "/register"
+@using Microsoft.AspNetCore.Authorization
+@attribute [AllowAnonymous]
+@using Client.Models.Commands
+@using Client.Services
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@layout AuthLayout
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center justify-center mud-width-full" Style="height: 100vh;">
+    <MudPaper Elevation="3" Class="pa-8 w-100" Style="max-width: 450px;">
+        <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6">Регистрация</MudText>
+        
+        <MudForm @ref="_form" @bind-IsValid="@_success">
+            <MudTextField @bind-Value="_model.FirstName" Label="Имя" Required="true" Variant="Variant.Outlined" Class="mb-4" />
+            <MudTextField @bind-Value="_model.LastName" Label="Фамилия" Required="true" Variant="Variant.Outlined" Class="mb-4" />
+            <MudTextField @bind-Value="_model.UserName" Label="Логин" Required="true" Variant="Variant.Outlined" Class="mb-4" />
+            <MudTextField @bind-Value="_model.Password" Label="Пароль" Required="true" Variant="Variant.Outlined" InputType="InputType.Password" Class="mb-6" />
+            
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" FullWidth="true" Disabled="@(!_success || _isLoading)" OnClick="HandleRegister">
+                @if (_isLoading)
+                {
+                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                    <MudText Class="ms-2">Регистрация...</MudText>
+                }
+                else
+                {
+                    <MudText>Зарегистрироваться</MudText>
+                }
+            </MudButton>
+        </MudForm>
+
+        <div class="d-flex justify-center mt-4">
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/login"))">
+                Уже есть аккаунт? Войти
+            </MudButton>
+        </div>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private MudForm _form = null!;
+    private bool _success;
+    private bool _isLoading;
+    
+    private RegisterFormModel _model = new();
+
+    private class RegisterFormModel
+    {
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+
+    private async Task HandleRegister()
+    {
+        await _form.Validate();
+        if (!_form.IsValid) return;
+
+        _isLoading = true;
+        try
+        {
+            var command = new RegisterUserCommand(_model.FirstName, _model.LastName, null, _model.UserName, _model.Password, null);
+            
+            var success = await AuthService.RegisterAsync(command);
+            if (success)
+            {
+                Snackbar.Add("Успешная регистрация! Теперь вы можете войти.", Severity.Success);
+                NavigationManager.NavigateTo("/login");
+            }
+            else
+            {
+                Snackbar.Add("Ошибка регистрации. Возможно, логин уже занят.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Ошибка сервера: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

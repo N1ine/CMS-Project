@@ -1,0 +1,31 @@
+﻿@using Client.Services
+@inject SearchService SearchService
+
+<MudAppBar Elevation="1">
+    <MudText Typo="Typo.h6">CMS Admin</MudText>
+    <MudSpacer />
+
+    <MudTextField @bind-Value="filters.EmployeeName" Placeholder="Search employee..."
+                  Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                  Class="mr-4 mt-0" Margin="Margin.Dense" Variant="Variant.Outlined" />
+
+    <MudMenu Icon="@Icons.Material.Filled.FilterList" Color="Color.Inherit" AnchorOrigin="Origin.BottomRight">
+        <div class="pa-4" style="width: 300px;">
+            <MudSelect @bind-Value="filters.Status" Label="Status" Dense="true" Class="mb-2">
+                <MudSelectItem Value="@((int?)null)">All</MudSelectItem>
+                <MudSelectItem Value="@((int?)0)">Not Started</MudSelectItem>
+                <MudSelectItem Value="@((int?)1)">Active</MudSelectItem>
+                <MudSelectItem Value="@((int?)2)">Finished</MudSelectItem>
+            </MudSelect>
+            <MudDateRangePicker @bind-DateRange="filters.StartDateRange" Label="Start Date Range" />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" OnClick="ApplySearch" Class="mt-2">
+                Apply
+            </MudButton>
+        </div>
+    </MudMenu>
+</MudAppBar>
+
+@code {
+    private SearchFilters filters = new();
+    private void ApplySearch() => SearchService.TriggerSearch(filters);
+}

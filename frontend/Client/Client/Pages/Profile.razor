@@ -1,0 +1,23 @@
+﻿@page "/profile"
+@using Microsoft.AspNetCore.Components.Authorization
+@using MudBlazor
+
+<MudText Typo="Typo.h5" Class="mb-4">User Profile</MudText>
+
+<MudPaper Elevation="2" Class="pa-6" MaxWidth="500px">
+    <AuthorizeView>
+        <Authorized>
+            <MudTextField Value="@context.User.Identity?.Name"
+                          Label="Username"
+                          ReadOnly="true"
+                          Variant="Variant.Outlined"
+                          Class="mb-4" />
+
+            <MudTextField Value="@("********")"
+                          Label="Password"
+                          ReadOnly="true"
+                          InputType="InputType.Password"
+                          Variant="Variant.Outlined" />
+        </Authorized>
+    </AuthorizeView>
+</MudPaper>
