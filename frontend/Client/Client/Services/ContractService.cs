@@ -1,6 +1,6 @@
 ﻿using System.Net.Http.Json;
-using Client.Models.DTOs;
-using Client.Models.Commands;
+using global::Shared.DTOs;
+using global::Shared.Commands;
 
 namespace Client.Services;
 

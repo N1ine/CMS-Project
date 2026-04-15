@@ -1,8 +1,8 @@
 @page "/employees"
 @using MudBlazor
 @using Client.Services
-@using Client.Models.Commands
-@using Client.Models
+@using global::Shared.Commands
+@using global::Shared.DTOs
 @using Client.Components
 @inject EmployeeService employeeService
 @inject CompanyService companyService
@@ -62,7 +62,7 @@
             employees = empTask.Result;
             allCompanies = compTask.Result; 
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             Snackbar.Add("Ошибка загрузки сотрудников.", Severity.Error);
         }

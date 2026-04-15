@@ -1,6 +1,6 @@
-﻿using Application.DTOs;
-using Application.DTOs.Commands;
-using Application.DTOs.Responses;
+﻿using Shared.DTOs;
+using Shared.Commands;
+using Shared.Responses;
 using Application.Interfaces;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -26,7 +26,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<ActionResult<AuthResultDto>> Login([FromBody] LoginCommand command)
+    public async Task<ActionResult<AuthResultDto>> Login([FromBody] LoginUserCommand command)
     {
         var result = await _authService.LoginAsync(command);
         return Ok(result);

@@ -1,5 +1,5 @@
-﻿using Application.DTOs;
-using Application.DTOs.Commands;
+﻿using Shared.DTOs;
+using Shared.Commands;
 using Application.Interfaces;
 using Domain.Entities;
 using Domain.Exceptions;

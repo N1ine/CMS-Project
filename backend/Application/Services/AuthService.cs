@@ -1,6 +1,6 @@
-﻿using Application.DTOs;
-using Application.DTOs.Commands;
-using Application.DTOs.Responses;
+﻿using Shared.DTOs;
+using Shared.Commands;
+using Shared.Responses;
 using Application.Common.Security;
 using Domain.Entities;
 using Domain.Exceptions;
@@ -70,7 +70,7 @@ public class AuthService : IAuthService
         return new UserDto(user.Id, user.UserName, user.Role, linkedEmployeeId);
     }
 
-    public async Task<AuthResultDto> LoginAsync(LoginCommand command)
+    public async Task<AuthResultDto> LoginAsync(LoginUserCommand command)
     {
         if (command is null)
             throw new ValidationException("Command must not be null");

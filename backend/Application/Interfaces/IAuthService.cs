@@ -1,10 +1,10 @@
-﻿using Application.DTOs;
-using Application.DTOs.Commands;
-using Application.DTOs.Responses;
+﻿using Shared.DTOs;
+using Shared.Commands;
+using Shared.Responses;
 using System.Threading.Tasks;
 
 public interface IAuthService
 {
     Task<UserDto> RegisterAsync(RegisterUserCommand command);
-    Task<AuthResultDto> LoginAsync(LoginCommand command);
+    Task<AuthResultDto> LoginAsync(LoginUserCommand command);
 }

@@ -1,7 +1,7 @@
-﻿using Application.DTOs;
-using Application.DTOs.Commands;
-using Application.DTOs.Requests;
-using Application.DTOs.Responses;
+﻿using Shared.DTOs;
+using Shared.Commands;
+using Shared.Requests;
+using Shared.Responses;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

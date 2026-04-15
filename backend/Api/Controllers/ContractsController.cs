@@ -1,7 +1,8 @@
-﻿using Application.DTOs;
-using Application.DTOs.Commands;
-using Application.DTOs.Requests;
-using Application.DTOs.Responses;
+﻿using Shared.DTOs;
+using Shared.Commands;
+using Shared.Requests;
+using Shared.Responses;
+using Shared.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -73,7 +74,7 @@ public class ContractsController : ControllerBase
     [HttpGet("by-status")]
     public async Task<ActionResult<IReadOnlyList<ContractDto>>> GetByStatus([FromQuery] string status)
     {
-        if (!Enum.TryParse(status, true, out Domain.Enums.ContractStatus parsed))
+        if (!Enum.TryParse(status, true, out Shared.Enums.ContractStatus parsed))
             return BadRequest("Invalid status");
 
         var result = await _mediator.Send(new GetContractsByStatusQuery { Status = parsed });

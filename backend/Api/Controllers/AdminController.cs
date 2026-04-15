@@ -1,5 +1,4 @@
-﻿using Api.DTOs.Requests;
-using Application.DTOs.Requests;
+﻿using Shared.Requests;
 using Domain.Entities;
 using Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;

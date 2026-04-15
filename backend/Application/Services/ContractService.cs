@@ -1,6 +1,6 @@
-﻿using Application.DTOs;
-using Application.DTOs.Commands;
-using Application.DTOs.Requests;
+﻿using Shared.DTOs;
+using Shared.Commands;
+using Shared.Requests;
 using Domain.Interfaces;
 using Domain.Entities;
 using Domain.Exceptions;
@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Application.Interfaces;
-using Domain.Enums;
+using Shared.Enums;
 
 namespace Application.Services;
 
@@ -241,21 +241,21 @@ public class ContractService : IContractService
         var company = await _companyRepository.GetByIdAsync(contract.CompanyId)
                       ?? throw new EntityNotFoundException($"Company with id {contract.CompanyId} not found");
 
-        return new ContractDto(
-            contract.Id,
-            contract.CompanyId,
-            contract.EmployeeId,
-            contract.Position,
-            contract.Description,
-            contract.StartDate,
-            contract.EndDate,
-            contract.Wage,
-            contract.Status,
-            employee.FirstName,
-            employee.LastName,
-            company.Name
-        );
-
+        return new ContractDto
+        {
+            Id = contract.Id,
+            CompanyId = contract.CompanyId,
+            EmployeeId = contract.EmployeeId,
+            Position = contract.Position,
+            Description = contract.Description,
+            StartDate = contract.StartDate,
+            EndDate = contract.EndDate,
+            Wage = contract.Wage,
+            Status = contract.Status,
+            EmployeeFirstName = employee.FirstName,
+            EmployeeLastName = employee.LastName,
+            CompanyName = company.Name
+        };
     }
 
     private async Task<IReadOnlyList<ContractDto>> MapListToDtoAsync(IEnumerable<Contract> contracts)

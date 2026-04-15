@@ -1,9 +1,0 @@
-﻿namespace Application.DTOs;
-
-public record EmployeeDto(
-    int Id,
-    int CompanyId,
-    string FirstName,
-    string LastName,
-    string? Email
-);

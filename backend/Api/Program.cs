@@ -1,5 +1,5 @@
 ﻿using System.Text;
-using Application.DTOs.Commands;
+using Shared.Commands;
 using Application.Interfaces;
 using Application.Services;
 using Application.Validation.Contracts;
@@ -37,7 +37,10 @@ builder.Services.AddValidatorsFromAssembly(typeof(CreateContractCommandValidator
 
 builder.Services.AddMediatR(cfg =>
 {
-    cfg.RegisterServicesFromAssembly(typeof(CreateContractCommand).Assembly);
+    cfg.RegisterServicesFromAssemblies(
+        typeof(CreateContractCommand).Assembly, // На всякий случай оставляем Shared
+        typeof(Application.Services.CompanyService).Assembly
+    );
 });
 
 builder.Services.AddScoped<IContractService, ContractService>();

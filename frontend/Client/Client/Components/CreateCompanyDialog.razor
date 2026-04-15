@@ -1,4 +1,4 @@
-﻿@using Client.Models.Commands
+﻿@using global::Shared.Commands
 
 <MudDialog>
     <DialogContent>
@@ -45,7 +45,12 @@
         await _form.Validate();
         if (_form.IsValid)
         {
-            var command = new CreateCompanyCommand(_model.Name, _model.Address, _model.TaxNumber);
+            var command = new CreateCompanyCommand
+            {
+                Name = _model.Name, 
+                Address = _model.Address, 
+                TaxNumber = _model.TaxNumber
+            };
             MudDialog.Close(DialogResult.Ok(command));
         }
     }

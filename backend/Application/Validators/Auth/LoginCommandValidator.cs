@@ -1,9 +1,9 @@
-﻿using Application.DTOs.Commands;
+﻿using Shared.Commands;
 using FluentValidation;
 
 namespace Application.Validation.Auth;
 
-public class LoginCommandValidator : AbstractValidator<LoginCommand>
+public class LoginCommandValidator : AbstractValidator<LoginUserCommand>
 {
     public LoginCommandValidator()
     {

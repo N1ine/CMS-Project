@@ -1,1 +1,0 @@
-﻿public record UpdateCompanyCommand(int Id, string Name, string? Address, string? TaxNumber);

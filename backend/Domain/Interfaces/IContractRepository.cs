@@ -1,5 +1,5 @@
 ﻿using Domain.Entities;
-using Domain.Enums;
+using Shared.Enums;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;

@@ -1,6 +1,6 @@
-﻿using Application.DTOs;
-using Application.DTOs.Commands;
-using Application.DTOs.Requests;
+﻿using Shared.DTOs;
+using Shared.Commands;
+using Shared.Requests;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Interfaces;

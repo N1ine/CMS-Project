@@ -1,4 +1,4 @@
-﻿using Application.DTOs.Commands;
+﻿using Shared.Commands;
 using FluentValidation;
 
 namespace Application.Validation.Companies;

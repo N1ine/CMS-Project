@@ -2,9 +2,8 @@
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
 
-// Явно подключаем пространства имен твоих моделей
-using Client.Models;
-using Client.Models.Commands;
+using global::Shared.DTOs;
+using global::Shared.Commands;
 
 namespace Client.Services;
 
@@ -22,7 +21,7 @@ public class AuthService
     }
 
     // Явно требуем LoginCommand из папки Models.Commands
-    public async Task<bool> LoginAsync(Client.Models.Commands.LoginCommand command)
+    public async Task<bool> LoginAsync(global::Shared.Commands.LoginUserCommand command)
     {
         var response = await _httpClient.PostAsJsonAsync("api/auth/login", command); 
 
@@ -41,7 +40,7 @@ public class AuthService
     }
 
     // Явно требуем RegisterUserCommand из папки Models.Commands
-    public async Task<bool> RegisterAsync(Client.Models.Commands.RegisterUserCommand command)
+    public async Task<bool> RegisterAsync(global::Shared.Commands.RegisterUserCommand command)
     {
         var response = await _httpClient.PostAsJsonAsync("api/auth/register", command);
         return response.IsSuccessStatusCode;

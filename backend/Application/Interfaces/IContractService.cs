@@ -1,6 +1,6 @@
-﻿using Application.DTOs.Requests;
-using Application.DTOs.Commands;
-using Application.DTOs;
+﻿using Shared.Requests;
+using Shared.Commands;
+using Shared.DTOs;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 

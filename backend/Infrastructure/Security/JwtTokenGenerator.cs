@@ -1,7 +1,7 @@
 ﻿
 using Application.Common.Security;
-using Application.DTOs;
-using Application.DTOs.Responses;
+using Shared.DTOs;
+using Shared.Responses;
 using Domain.Entities;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;

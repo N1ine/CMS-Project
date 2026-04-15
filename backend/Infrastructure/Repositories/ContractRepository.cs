@@ -1,7 +1,7 @@
 ﻿using System.Data;
 using Dapper;
 using Domain.Entities;
-using Domain.Enums;
+using Shared.Enums;
 using Domain.Interfaces;
 using Infrastructure.Data;
 
